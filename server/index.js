@@ -3,7 +3,6 @@ const cors = require("cors");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
@@ -14,20 +13,21 @@ const handleChat = async (req, res) => {
     const { message } = req.body;
 
     if (!message) {
-      return res.status(400).json({ error: "Message content is required" });
+      return res.status(400).json({ error: "Message is required." });
     }
 
     if (!process.env.GEMINI_API_KEY) {
-      return res.status(500).json({ error: "GEMINI_API_KEY environment variable is missing on Render." });
+      return res.status(500).json({ error: "GEMINI_API_KEY is missing on Render Environment Variables." });
     }
 
+    // Try gemini-1.5-flash first
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const result = await model.generateContent(message);
-    const responseText = result.response.text();
+    const text = result.response.text();
 
-    return res.json({ reply: responseText });
+    return res.json({ reply: text });
   } catch (error) {
-    console.error("Chatbot Server Error:", error);
+    console.error("Gemini Error:", error);
     return res.status(500).json({ error: error.message || "Failed to generate AI response." });
   }
 };
@@ -35,11 +35,5 @@ const handleChat = async (req, res) => {
 app.post("/api/chat", handleChat);
 app.post("/chat", handleChat);
 
-app.get("/", (req, res) => {
-  res.send("BSIT Chatbot Backend Server is active.");
-});
-
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
