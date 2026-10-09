@@ -8,7 +8,6 @@ function App() {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Auto-scroll to the newest message
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -27,22 +26,31 @@ function App() {
     setLoading(true);
 
     try {
-      // REPLACE THIS URL WITH YOUR LIVE RENDER BACKEND URL ONCE DEPLOYED
-      const response = await fetch("https://your-backend-service.onrender.com/api/chat", {
+      // Connects to your live Render backend
+      const response = await fetch("https://group-chatbot-icqb.onrender.com/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: userMessage }),
       });
 
       const data = await response.json();
-      
+
       if (response.ok) {
-        setMessages((prev) => [...prev, { sender: "ai", text: data.reply || data.response }]);
+        setMessages((prev) => [
+          ...prev,
+          { sender: "ai", text: data.reply || data.response || "No response received." }
+        ]);
       } else {
-        setMessages((prev) => [...prev, { sender: "ai", text: "Error: Unable to get response." }]);
+        setMessages((prev) => [
+          ...prev,
+          { sender: "ai", text: `Error: ${data.error || "Server issue occurred."}` }
+        ]);
       }
     } catch (error) {
-      setMessages((prev) => [...prev, { sender: "ai", text: "Error: Failed to fetch response from server." }]);
+      setMessages((prev) => [
+        ...prev,
+        { sender: "ai", text: "Error: Failed to connect to server." }
+      ]);
     } finally {
       setLoading(false);
     }
@@ -59,7 +67,7 @@ function App() {
         </div>
       </header>
 
-      {/* Messages Container */}
+      {/* Chat Messages */}
       <div style={styles.chatBox}>
         {messages.map((msg, index) => (
           <div
@@ -76,7 +84,7 @@ function App() {
               }}
             >
               <span style={styles.senderLabel}>
-                {msg.sender === "user" ? "You" : "AI"}
+                {msg.sender === "user" ? "YOU" : "AI"}
               </span>
               <p style={styles.messageText}>{msg.text}</p>
             </div>
@@ -94,7 +102,7 @@ function App() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
+      {/* Input Bar */}
       <form onSubmit={sendMessage} style={styles.inputContainer}>
         <input
           type="text"
@@ -111,13 +119,11 @@ function App() {
   );
 }
 
-// Inline Styling Object
 const styles = {
   container: {
     display: "flex",
     flexDirection: "column",
     height: "100vh",
-    maxHeight: "100vh",
     backgroundColor: "#0f172a",
     color: "#f8fafc",
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
@@ -129,7 +135,6 @@ const styles = {
     padding: "16px 24px",
     backgroundColor: "#1e293b",
     borderBottom: "1px solid #334155",
-    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
   },
   headerStatus: {
     width: "10px",
@@ -163,7 +168,6 @@ const styles = {
     maxWidth: "70%",
     padding: "12px 16px",
     borderRadius: "16px",
-    boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
     wordBreak: "break-word",
   },
   userBubble: {
@@ -187,7 +191,6 @@ const styles = {
     fontWeight: "bold",
     marginBottom: "4px",
     opacity: 0.8,
-    textTransform: "uppercase",
   },
   messageText: {
     margin: 0,
