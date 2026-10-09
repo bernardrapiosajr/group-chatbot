@@ -31,7 +31,13 @@ export default function App() {
         }
       );
 
-      const { reply } = await r.json();
+      const data = await r.json();
+
+      if (!r.ok) {
+        throw new Error(data.error || "Server error");
+      }
+
+      const { reply } = data;
 
       setMessages([
         ...next,
@@ -42,7 +48,7 @@ export default function App() {
         ...next,
         {
           role: "assistant",
-          content: "Sorry, something went wrong."
+          content: "Error: " + error.message
         }
       ]);
     }
