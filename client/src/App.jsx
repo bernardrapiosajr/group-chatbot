@@ -1,119 +1,225 @@
-import { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 
-export default function App() {
-  const [messages, setMessages] = useState([]);
-  const [text, setText] = useState("");
-  const [busy, setBusy] = useState(false);
+function App() {
+  const [messages, setMessages] = useState([
+    { sender: "ai", text: "Hello! I am your BSIT AI Assistant. How can I help you today?" }
+  ]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef(null);
 
-  async function send() {
-    if (!text.trim()) return;
+  // Auto-scroll to the newest message
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
-    const next = [
-      ...messages,
-      { role: "user", content: text }
-    ];
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, loading]);
 
-    setMessages(next);
-    setText("");
-    setBusy(true);
+  const sendMessage = async (e) => {
+    e.preventDefault();
+    if (!input.trim() || loading) return;
+
+    const userMessage = input.trim();
+    setMessages((prev) => [...prev, { sender: "user", text: userMessage }]);
+    setInput("");
+    setLoading(true);
 
     try {
-      const r = await fetch(
-        `${import.meta.env.VITE_API_URL}/chat`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            messages: next
-          })
-        }
-      );
+      // REPLACE THIS URL WITH YOUR LIVE RENDER BACKEND URL ONCE DEPLOYED
+      const response = await fetch("https://your-backend-service.onrender.com/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userMessage }),
+      });
 
-      const data = await r.json();
-
-      if (!r.ok) {
-        throw new Error(data.error || "Server error");
+      const data = await response.json();
+      
+      if (response.ok) {
+        setMessages((prev) => [...prev, { sender: "ai", text: data.reply || data.response }]);
+      } else {
+        setMessages((prev) => [...prev, { sender: "ai", text: "Error: Unable to get response." }]);
       }
-
-      const { reply } = data;
-
-      setMessages([
-        ...next,
-        { role: "assistant", content: reply }
-      ]);
     } catch (error) {
-      setMessages([
-        ...next,
-        {
-          role: "assistant",
-          content: "Error: " + error.message
-        }
-      ]);
+      setMessages((prev) => [...prev, { sender: "ai", text: "Error: Failed to fetch response from server." }]);
+    } finally {
+      setLoading(false);
     }
-
-    setBusy(false);
-  }
+  };
 
   return (
-    <div style={{
-      maxWidth: "700px",
-      margin: "40px auto",
-      padding: "20px",
-      fontFamily: "Arial"
-    }}>
-      <h1>BSIT AI Chatbot</h1>
+    <div style={styles.container}>
+      {/* Header */}
+      <header style={styles.header}>
+        <div style={styles.headerStatus}></div>
+        <div>
+          <h1 style={styles.title}>BSIT AI Chatbot</h1>
+          <p style={styles.subtitle}>Always online to assist you</p>
+        </div>
+      </header>
 
-      <div style={{
-        minHeight: "400px",
-        border: "1px solid #ccc",
-        padding: "15px",
-        marginBottom: "15px"
-      }}>
-        {messages.map((message, index) => (
-          <div key={index} style={{
-            marginBottom: "10px",
-            padding: "10px",
-            background: message.role === "user"
-              ? "#e3f2fd"
-              : "#f1f1f1",
-            borderRadius: "8px"
-          }}>
-            <strong>
-              {message.role === "user" ? "You" : "AI"}:
-            </strong>{" "}
-            {message.content}
+      {/* Messages Container */}
+      <div style={styles.chatBox}>
+        {messages.map((msg, index) => (
+          <div
+            key={index}
+            style={{
+              ...styles.messageRow,
+              justifyContent: msg.sender === "user" ? "flex-end" : "flex-start",
+            }}
+          >
+            <div
+              style={{
+                ...styles.bubble,
+                ...(msg.sender === "user" ? styles.userBubble : styles.aiBubble),
+              }}
+            >
+              <span style={styles.senderLabel}>
+                {msg.sender === "user" ? "You" : "AI"}
+              </span>
+              <p style={styles.messageText}>{msg.text}</p>
+            </div>
           </div>
         ))}
 
-        {busy && <p>Typing...</p>}
+        {loading && (
+          <div style={{ ...styles.messageRow, justifyContent: "flex-start" }}>
+            <div style={{ ...styles.bubble, ...styles.aiBubble, ...styles.loadingBubble }}>
+              <span style={styles.senderLabel}>AI</span>
+              <p style={styles.messageText}>Thinking...</p>
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
       </div>
 
-      <div style={{ display: "flex", gap: "10px" }}>
+      {/* Input Area */}
+      <form onSubmit={sendMessage} style={styles.inputContainer}>
         <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") send();
-          }}
-          placeholder="Type your message..."
-          style={{
-            flex: 1,
-            padding: "12px"
-          }}
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Type your message here..."
+          style={styles.input}
         />
-
-        <button
-          onClick={send}
-          disabled={busy}
-          style={{
-            padding: "12px 20px"
-          }}
-        >
+        <button type="submit" disabled={loading} style={styles.sendButton}>
           Send
         </button>
-      </div>
+      </form>
     </div>
   );
 }
+
+// Inline Styling Object
+const styles = {
+  container: {
+    display: "flex",
+    flexDirection: "column",
+    height: "100vh",
+    maxHeight: "100vh",
+    backgroundColor: "#0f172a",
+    color: "#f8fafc",
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  },
+  header: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    padding: "16px 24px",
+    backgroundColor: "#1e293b",
+    borderBottom: "1px solid #334155",
+    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+  },
+  headerStatus: {
+    width: "10px",
+    height: "10px",
+    borderRadius: "50%",
+    backgroundColor: "#22c55e",
+  },
+  title: {
+    fontSize: "1.25rem",
+    fontWeight: "600",
+    margin: 0,
+  },
+  subtitle: {
+    fontSize: "0.8rem",
+    color: "#94a3b8",
+    margin: 0,
+  },
+  chatBox: {
+    flex: 1,
+    overflowY: "auto",
+    padding: "20px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+  },
+  messageRow: {
+    display: "flex",
+    width: "100%",
+  },
+  bubble: {
+    maxWidth: "70%",
+    padding: "12px 16px",
+    borderRadius: "16px",
+    boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
+    wordBreak: "break-word",
+  },
+  userBubble: {
+    backgroundColor: "#2563eb",
+    color: "#ffffff",
+    borderBottomRightRadius: "4px",
+  },
+  aiBubble: {
+    backgroundColor: "#1e293b",
+    color: "#e2e8f0",
+    border: "1px solid #334155",
+    borderBottomLeftRadius: "4px",
+  },
+  loadingBubble: {
+    opacity: 0.7,
+    fontStyle: "italic",
+  },
+  senderLabel: {
+    display: "block",
+    fontSize: "0.7rem",
+    fontWeight: "bold",
+    marginBottom: "4px",
+    opacity: 0.8,
+    textTransform: "uppercase",
+  },
+  messageText: {
+    margin: 0,
+    fontSize: "0.95rem",
+    lineHeight: "1.4",
+  },
+  inputContainer: {
+    display: "flex",
+    padding: "16px",
+    backgroundColor: "#1e293b",
+    borderTop: "1px solid #334155",
+    gap: "10px",
+  },
+  input: {
+    flex: 1,
+    padding: "12px 16px",
+    borderRadius: "8px",
+    border: "1px solid #334155",
+    backgroundColor: "#0f172a",
+    color: "#ffffff",
+    fontSize: "0.95rem",
+    outline: "none",
+  },
+  sendButton: {
+    padding: "12px 24px",
+    backgroundColor: "#2563eb",
+    color: "#ffffff",
+    border: "none",
+    borderRadius: "8px",
+    fontWeight: "600",
+    cursor: "pointer",
+  },
+};
+
+export default App;
