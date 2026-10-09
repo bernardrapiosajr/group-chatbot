@@ -26,7 +26,6 @@ function App() {
     setLoading(true);
 
     try {
-      // Connects to your live Render backend
       const response = await fetch("https://group-chatbot-icqb.onrender.com/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
