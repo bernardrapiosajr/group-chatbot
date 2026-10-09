@@ -4,14 +4,11 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const app = express();
 
-// Enable CORS for all origins (fixes Vercel blocking issue)
 app.use(cors());
 app.use(express.json());
 
-// Initialize Gemini API with your Render Environment Variable
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
-// Handles both /api/chat AND /chat to avoid 404 route mismatch errors
 const handleChat = async (req, res) => {
   try {
     const { message } = req.body;
@@ -38,7 +35,6 @@ const handleChat = async (req, res) => {
 app.post("/api/chat", handleChat);
 app.post("/chat", handleChat);
 
-// Health check endpoint
 app.get("/", (req, res) => {
   res.send("BSIT Chatbot Backend Server is active.");
 });
