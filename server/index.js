@@ -22,7 +22,6 @@ const handleChat = async (req, res) => {
       });
     }
 
-    // Tawag sa OpenRouter API gamit ang Gemini model
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -31,6 +30,7 @@ const handleChat = async (req, res) => {
       },
       body: JSON.stringify({
         "model": "google/gemini-2.5-flash",
+        "max_tokens": 1000, // Dinagdag ito para pumasa sa OpenRouter free account limit!
         "messages": [
           { "role": "user", "content": message }
         ]
